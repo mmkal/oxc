@@ -1,7 +1,7 @@
 mod sort_imports;
 
 use oxc_formatter::{
-    CustomGroupDefinition, FormatOptions, GroupEntry, ImportModifier, ImportSelector, QuoteStyle,
+    CustomGroupDefinition, GroupEntry, ImportModifier, ImportSelector, JsFormatOptions, QuoteStyle,
     Semicolons, SortImportsOptions, SortOrder,
 };
 use serde::Deserialize;
@@ -123,9 +123,9 @@ where
     Ok(Some(ParsedGroups { groups, newline_boundary_overrides }))
 }
 
-fn parse_test_config(json: &str) -> FormatOptions {
+fn parse_test_config(json: &str) -> JsFormatOptions {
     let config: TestConfig = serde_json::from_str(json).expect("Invalid test config JSON");
-    let mut options = FormatOptions::default();
+    let mut options = JsFormatOptions::default();
 
     if let Some(single_quote) = config.single_quote {
         options.quote_style = if single_quote { QuoteStyle::Single } else { QuoteStyle::Double };
@@ -185,7 +185,7 @@ fn parse_test_config(json: &str) -> FormatOptions {
     options
 }
 
-fn format_code(code: &str, options: &FormatOptions) -> String {
+fn format_code(code: &str, options: &JsFormatOptions) -> String {
     use oxc_allocator::Allocator;
     use oxc_formatter::{Formatter, get_parse_options};
     use oxc_parser::Parser;

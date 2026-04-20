@@ -13,7 +13,7 @@ use oxc_config_discovery::{
     ConfigDiscovery, ConfigFileNames, DiscoveredConfigFile, is_js_config_path,
 };
 #[cfg(feature = "napi")]
-use oxc_formatter::FormatOptions;
+use oxc_formatter::JsFormatOptions;
 
 #[cfg(feature = "napi")]
 use super::js_config::JsConfigLoaderCb;
@@ -71,7 +71,7 @@ pub fn resolve_for_api(
 #[cfg(feature = "napi")]
 #[derive(Debug)]
 pub struct EmbeddedCallbackResolved {
-    pub format_options: Box<FormatOptions>,
+    pub format_options: Box<JsFormatOptions>,
     /// Retained so nested embedded callbacks can derive Prettier options on demand.
     /// (e.g., CSS-in-JS inside the embedded JS)
     pub config: Box<FormatConfig>,
