@@ -17,8 +17,8 @@ use crate::{
 use super::FormatWrite;
 
 impl<'a> FormatWrite<'a> for AstNode<'a, Program<'a>> {
-    fn write(&self, f: &mut Formatter<'_, 'a>) {
-        let format_trailing_comments = format_with(|f| {
+    fn write(&self, f: &mut JsFormatter<'_, 'a>) {
+        let format_trailing_comments = js_format_with(|f| {
             write!(
                 f,
                 FormatTrailingComments::Comments(f.context().comments().unprinted_comments())
@@ -53,8 +53,8 @@ impl<'a> Deref for FormatProgramBody<'a, '_> {
     }
 }
 
-impl<'a> Format<'a> for FormatProgramBody<'a, '_> {
-    fn fmt(&self, f: &mut Formatter<'_, 'a>) {
+impl<'a> Format<'a, JsFormatContext<'a>> for FormatProgramBody<'a, '_> {
+    fn fmt(&self, f: &mut JsFormatter<'_, 'a>) {
         let mut join = f.join_nodes_with_hardline();
         for stmt in
             self.iter().filter(|stmt| !matches!(stmt.as_ref(), Statement::EmptyStatement(_)))
@@ -93,8 +93,8 @@ impl<'a> Format<'a> for FormatProgramBody<'a, '_> {
     }
 }
 
-impl<'a> Format<'a> for AstNode<'a, Vec<'a, Directive<'a>>> {
-    fn fmt(&self, f: &mut Formatter<'_, 'a>) {
+impl<'a> Format<'a, JsFormatContext<'a>> for AstNode<'a, Vec<'a, Directive<'a>>> {
+    fn fmt(&self, f: &mut JsFormatter<'_, 'a>) {
         let Some(last_directive) = self.last() else {
             // No directives, no extra new line
             return;
@@ -128,7 +128,7 @@ impl<'a> Format<'a> for AstNode<'a, Vec<'a, Directive<'a>>> {
 }
 
 impl<'a> FormatWrite<'a> for AstNode<'a, Directive<'a>> {
-    fn write(&self, f: &mut Formatter<'_, 'a>) {
+    fn write(&self, f: &mut JsFormatter<'_, 'a>) {
         write!(
             f,
             [
@@ -145,7 +145,7 @@ impl<'a> FormatWrite<'a> for AstNode<'a, Directive<'a>> {
 }
 
 impl<'a> FormatWrite<'a> for AstNode<'a, Hashbang<'a>> {
-    fn write(&self, f: &mut Formatter<'_, 'a>) {
+    fn write(&self, f: &mut JsFormatter<'_, 'a>) {
         write!(f, ["#!", text(self.value().as_str().trim_end())]);
 
         if f.source_text().lines_after(self.span.end) > 1 {

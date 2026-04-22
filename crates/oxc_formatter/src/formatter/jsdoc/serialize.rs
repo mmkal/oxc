@@ -7,7 +7,6 @@ use oxc_span::Span;
 
 use crate::JsFormatOptions;
 use crate::external_formatter::ExternalCallbacks;
-use crate::formatter::Formatter;
 use crate::formatter::prelude::*;
 use crate::options::{JsdocOptions, QuoteStyle};
 use crate::write;
@@ -28,8 +27,8 @@ pub enum FormattedJsdoc<'a> {
     MultiLine(&'a str),
 }
 
-impl<'a> Format<'a> for FormattedJsdoc<'a> {
-    fn fmt(&self, f: &mut Formatter<'_, 'a>) {
+impl<'a> Format<'a, JsFormatContext<'a>> for FormattedJsdoc<'a> {
+    fn fmt(&self, f: &mut JsFormatter<'_, 'a>) {
         match self {
             FormattedJsdoc::Empty => {}
             FormattedJsdoc::SingleLine(content) => {
@@ -1074,7 +1073,7 @@ pub fn format_jsdoc_comment<'a>(
     options: &JsdocOptions,
     source_text: &str,
     available_width: usize,
-    f: &Formatter<'_, 'a>,
+    f: &JsFormatter<'_, 'a>,
 ) -> Option<FormattedJsdoc<'a>> {
     let external_callbacks = f.context().external_callbacks();
     let fmt = JsdocFormatter::new(
