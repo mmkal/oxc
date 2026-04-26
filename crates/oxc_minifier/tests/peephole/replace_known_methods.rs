@@ -817,6 +817,9 @@ fn test_add_template_literal() {
     test("x = `{${x}}` + '$'", "x = `{${x}}\\$`");
     test("x = `$` + `{${x}}`", "x = `\\${${x}}`");
     test("x = `{${x}}` + `$`", "x = `{${x}}\\$`");
+    test_value("new RegExp('\\r' + `${y.source}`)", "RegExp(`\\r${y.source}`)");
+    test_value("new RegExp('\\r\\n' + `${y.source}`)", "RegExp(`\\r\n${y.source}`)");
+    test_value("new RegExp('\\r\\rfoo' + `${y.source}`)", "RegExp(`\\r\\rfoo${y.source}`)");
 }
 
 #[test]
