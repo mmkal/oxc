@@ -66,6 +66,12 @@ fn remove_unused_function_declaration() {
 }
 
 #[test]
+fn remove_unused_declaration_after_dead_direct_eval() {
+    let options = CompressOptions::smallest();
+    test_options("function f(){if(false)eval('x');var x}f()", "", &options);
+}
+
+#[test]
 fn remove_unused_class_declaration() {
     let options = CompressOptions::smallest();
     test_options("class C {}", "", &options);

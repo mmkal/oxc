@@ -17,9 +17,15 @@ mod remove_unused_private_members;
 mod replace_known_methods;
 mod substitute_alternate_syntax;
 
+use std::vec::Vec as StdVec;
+
+use oxc_ast::ast_kind::AstKind;
 use oxc_ast_visit::Visit;
-use oxc_semantic::ReferenceId;
-use oxc_syntax::symbol::SymbolId;
+use oxc_semantic::{ReferenceId, Scoping};
+use oxc_syntax::{
+    scope::{ScopeFlags, ScopeId},
+    symbol::SymbolId,
+};
 use rustc_hash::FxHashSet;
 
 use oxc_allocator::Vec;
@@ -120,6 +126,20 @@ impl<'a> PeepholeOptimizations {
             ctx.scoping().symbol_is_mutated(symbol_id)
         }
     }
+
+    fn refresh_direct_eval_flags(scoping: &mut Scoping, direct_eval_scopes: &[ScopeId]) {
+        for index in 0..scoping.scopes_len() {
+            scoping.scope_flags_mut(ScopeId::from_usize(index)).remove(ScopeFlags::DirectEval);
+        }
+
+        for &scope_id in direct_eval_scopes {
+            let mut ancestor = Some(scope_id);
+            while let Some(scope_id) = ancestor {
+                ancestor = scoping.scope_parent_id(scope_id);
+                scoping.scope_flags_mut(scope_id).insert(ScopeFlags::DirectEval);
+            }
+        }
+    }
 }
 
 impl<'a> Traverse<'a> for PeepholeOptimizations {
@@ -138,9 +158,14 @@ impl<'a> Traverse<'a> for PeepholeOptimizations {
             // scan (`.position()`) per call, so removing many references to the same
             // symbol is O(n²) (happens in bundler output with thousands of unused
             // `var import_X = __toESM(require_Y())` declarations).
-            let mut counter = ReferencesCounter::default();
-            counter.visit_program(program);
-            ctx.scoping_mut().retain_resolved_references(&counter.refs);
+            // Also refresh `DirectEval` scope flags from the live AST. Dead eval calls can
+            // otherwise keep unused-declaration removal disabled until a fresh parse.
+            let mut collector = LiveUsageCollector::new(ctx.scoping());
+            collector.visit_program(program);
+            let LiveUsageCollector { refs, direct_eval_scopes, .. } = collector;
+            let scoping = ctx.scoping_mut();
+            scoping.retain_resolved_references(&refs);
+            Self::refresh_direct_eval_flags(scoping, &direct_eval_scopes);
         }
         // Only check class_symbols_stack in full optimization mode (not DCE mode)
         debug_assert!(ctx.state.dce || ctx.state.class_symbols_stack.is_exhausted());
@@ -526,12 +551,30 @@ impl<'a> Traverse<'a> for PeepholeOptimizations {
     }
 }
 
-#[derive(Default)]
-struct ReferencesCounter {
+struct LiveUsageCollector<'s> {
+    scoping: &'s Scoping,
     refs: FxHashSet<ReferenceId>,
+    direct_eval_scopes: StdVec<ScopeId>,
 }
 
-impl<'a> Visit<'a> for ReferencesCounter {
+impl<'s> LiveUsageCollector<'s> {
+    fn new(scoping: &'s Scoping) -> Self {
+        Self { scoping, refs: FxHashSet::default(), direct_eval_scopes: StdVec::new() }
+    }
+}
+
+impl<'a> Visit<'a> for LiveUsageCollector<'_> {
+    fn enter_node(&mut self, kind: AstKind<'a>) {
+        if let AstKind::CallExpression(call_expr) = kind
+            && !call_expr.optional
+            && call_expr.callee.is_specific_id("eval")
+            && let Some(ident) = call_expr.callee.get_identifier_reference()
+        {
+            let scope_id = self.scoping.get_reference(ident.reference_id()).scope_id();
+            self.direct_eval_scopes.push(scope_id);
+        }
+    }
+
     fn visit_identifier_reference(&mut self, it: &IdentifierReference<'a>) {
         let reference_id = it.reference_id();
         self.refs.insert(reference_id);
