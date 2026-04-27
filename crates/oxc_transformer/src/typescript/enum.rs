@@ -117,6 +117,27 @@ impl<'a> Traverse<'a, TransformState<'a>> for TypeScriptEnum {
                     .and_then(|i| i.reference_id.get());
                 (self.try_inline_computed_enum_member(member_expr, ctx), ref_id)
             }
+            // `c_num?.x` / `c_num?.['x']`: inline before es2020 lowers the chain.
+            // Otherwise lowering produces `c_num === null || c_num === void 0 ? void 0 : c_num.x`,
+            // and only the inner `c_num.x` reference gets deleted by the inline pass — leaving
+            // the test-condition references dangling once the enum declaration is removed.
+            Expression::ChainExpression(chain_expr) => match &chain_expr.expression {
+                ChainElement::StaticMemberExpression(member_expr) if member_expr.optional => {
+                    let ref_id = member_expr
+                        .object
+                        .get_identifier_reference()
+                        .and_then(|i| i.reference_id.get());
+                    (self.try_inline_enum_member(member_expr, ctx), ref_id)
+                }
+                ChainElement::ComputedMemberExpression(member_expr) if member_expr.optional => {
+                    let ref_id = member_expr
+                        .object
+                        .get_identifier_reference()
+                        .and_then(|i| i.reference_id.get());
+                    (self.try_inline_computed_enum_member(member_expr, ctx), ref_id)
+                }
+                _ => return,
+            },
             _ => return,
         };
 
