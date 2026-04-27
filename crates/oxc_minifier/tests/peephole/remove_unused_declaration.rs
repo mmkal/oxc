@@ -69,6 +69,10 @@ fn remove_unused_function_declaration() {
 fn remove_unused_declaration_after_dead_direct_eval() {
     let options = CompressOptions::smallest();
     test_options("function f(){if(false)eval('x');var x}f()", "", &options);
+    // Live eval still keeps `var x` alive after the refresh.
+    test_same_options("function f(){eval('x');var x}f()", &options);
+    // Optional `eval?.()` is not direct eval, so the function and `var x` are removed.
+    test_options("function f(){if(false)eval?.('x');var x}f()", "", &options);
 }
 
 #[test]

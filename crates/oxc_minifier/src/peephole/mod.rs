@@ -19,8 +19,7 @@ mod substitute_alternate_syntax;
 
 use std::vec::Vec as StdVec;
 
-use oxc_ast::ast_kind::AstKind;
-use oxc_ast_visit::Visit;
+use oxc_ast_visit::{Visit, walk::walk_call_expression};
 use oxc_semantic::{ReferenceId, Scoping};
 use oxc_syntax::{
     scope::{ScopeFlags, ScopeId},
@@ -128,6 +127,13 @@ impl<'a> PeepholeOptimizations {
     }
 
     fn refresh_direct_eval_flags(scoping: &mut Scoping, direct_eval_scopes: &[ScopeId]) {
+        // Fast path: if no scope had `DirectEval` and we didn't see one live, there's
+        // nothing to clear or set. Semantic propagates `DirectEval` to the root, so the
+        // root flag is a sufficient witness that any scope has it.
+        if direct_eval_scopes.is_empty() && !scoping.root_scope_flags().contains_direct_eval() {
+            return;
+        }
+
         for index in 0..scoping.scopes_len() {
             scoping.scope_flags_mut(ScopeId::from_usize(index)).remove(ScopeFlags::DirectEval);
         }
@@ -564,15 +570,15 @@ impl<'s> LiveUsageCollector<'s> {
 }
 
 impl<'a> Visit<'a> for LiveUsageCollector<'_> {
-    fn enter_node(&mut self, kind: AstKind<'a>) {
-        if let AstKind::CallExpression(call_expr) = kind
-            && !call_expr.optional
-            && call_expr.callee.is_specific_id("eval")
-            && let Some(ident) = call_expr.callee.get_identifier_reference()
+    fn visit_call_expression(&mut self, it: &CallExpression<'a>) {
+        if !it.optional
+            && let Some(ident) = it.callee.get_identifier_reference()
+            && ident.name == "eval"
         {
             let scope_id = self.scoping.get_reference(ident.reference_id()).scope_id();
             self.direct_eval_scopes.push(scope_id);
         }
+        walk_call_expression(self, it);
     }
 
     fn visit_identifier_reference(&mut self, it: &IdentifierReference<'a>) {
