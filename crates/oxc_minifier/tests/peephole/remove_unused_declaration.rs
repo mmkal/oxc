@@ -71,6 +71,19 @@ fn remove_unused_declaration_after_dead_direct_eval() {
     test_options("function f(){if(false)eval('x');var x}f()", "", &options);
     // Live eval still keeps `var x` alive after the refresh.
     test_same_options("function f(){eval('x');var x}f()", &options);
+    // Eval nested in another call's arguments must also keep `var x` alive — exercises
+    // the recursive walk in `LiveUsageCollector::visit_call_expression`. The trailing
+    // `1+1` triggers a peephole change so the refresh actually runs.
+    test_options(
+        "function f(){foo(eval('x'));var x}f();1+1",
+        "function f(){foo(eval('x'));var x}f()",
+        &options,
+    );
+}
+
+#[test]
+fn remove_unused_declaration_with_optional_eval() {
+    let options = CompressOptions::smallest();
     // Optional `eval?.()` is not direct eval, so the function and `var x` are removed.
     test_options("function f(){if(false)eval?.('x');var x}f()", "", &options);
 }

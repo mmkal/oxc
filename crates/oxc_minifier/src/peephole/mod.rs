@@ -578,6 +578,7 @@ impl<'a> Visit<'a> for LiveUsageCollector<'_> {
             let scope_id = self.scoping.get_reference(ident.reference_id()).scope_id();
             self.direct_eval_scopes.push(scope_id);
         }
+        // Recurse — `eval` may be nested in another call's arguments, e.g. `foo(eval('x'))`.
         walk_call_expression(self, it);
     }
 
