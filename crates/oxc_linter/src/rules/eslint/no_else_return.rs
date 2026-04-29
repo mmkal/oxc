@@ -517,8 +517,6 @@ fn test() {
         ),
         ("function foo() { var a; if (bar) { return true; } else { var a; } }", None),
         ("function foo() { if (bar) { var a; if (baz) { return true; } else { var a; } } }", None),
-        ("function foo() { var a; if (bar) { return true; } else { var a; } }", None), // { "ecmaVersion": 6 },
-        ("function foo() { if (bar) { var a; if (baz) { return true; } else { var a; } } }", None), // { "ecmaVersion": 6 },
         ("function foo() { let a; if (bar) { return true; } else { let a; } }", None), // { "ecmaVersion": 6 },
         ("class foo { bar() { let a; if (baz) { return true; } else { let a; } } }", None), // { "ecmaVersion": 6 },
         ("function foo() { if (bar) { let a; if (baz) { return true; } else { let a; } } }", None), // { "ecmaVersion": 6 },
@@ -709,7 +707,7 @@ fn test() {
             "function foo14() { if (foo) return bar
             else { baz(); }
             [1, 2, 3].map(foo) }",
-            "function foo14() { if (foo) return bar\n baz(); 
+            "function foo14() { if (foo) return bar\n baz();
             [1, 2, 3].map(foo) }",
             None,
         ),
@@ -717,7 +715,7 @@ fn test() {
             "function foo17() { if (foo) return bar
             else { baz() }
             qaz() }",
-            "function foo17() { if (foo) return bar\n baz() 
+            "function foo17() { if (foo) return bar\n baz()
             qaz() }",
             None,
         ),
