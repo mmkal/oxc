@@ -1,8 +1,4 @@
-var _ref, _ref2;
 function dec() {}
-class Addr {
-  street = "";
-}
 class Entity {
   #_name_accessor_storage = "";
   get name() {
@@ -39,20 +35,6 @@ class Entity {
   set list(value) {
     this.#_list_accessor_storage = value;
   }
-  #_pending_accessor_storage = Promise.resolve("");
-  get pending() {
-    return this.#_pending_accessor_storage;
-  }
-  set pending(value) {
-    this.#_pending_accessor_storage = value;
-  }
-  #_addr_accessor_storage = new Addr();
-  get addr() {
-    return this.#_addr_accessor_storage;
-  }
-  set addr(value) {
-    this.#_addr_accessor_storage = value;
-  }
   static #_sName_accessor_storage = "";
   static get sName() {
     return Entity.#_sName_accessor_storage;
@@ -86,16 +68,6 @@ babelHelpers.decorate([
   babelHelpers.decorateMetadata("design:type", Array),
   babelHelpers.decorateMetadata("design:paramtypes", [])
 ], Entity.prototype, "list", null);
-babelHelpers.decorate([
-  dec,
-  babelHelpers.decorateMetadata("design:type", typeof (_ref = typeof Promise !== "undefined" && Promise) === "function" ? _ref : Object),
-  babelHelpers.decorateMetadata("design:paramtypes", [])
-], Entity.prototype, "pending", null);
-babelHelpers.decorate([
-  dec,
-  babelHelpers.decorateMetadata("design:type", typeof (_ref2 = typeof Addr !== "undefined" && Addr) === "function" ? _ref2 : Object),
-  babelHelpers.decorateMetadata("design:paramtypes", [])
-], Entity.prototype, "addr", null);
 babelHelpers.decorate([
   dec,
   babelHelpers.decorateMetadata("design:type", String),
