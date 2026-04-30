@@ -1,3 +1,4 @@
+function dec(target, propertyKey) {}
 class Entity {
   #_name_accessor_storage = "";
   get name() {

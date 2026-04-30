@@ -1,4 +1,4 @@
-declare function dec(target: any, propertyKey: string): void;
+function dec(target: any, propertyKey: string): void {}
 
 class Entity {
 	@dec accessor name: string = "";
