@@ -17,8 +17,6 @@ mod remove_unused_private_members;
 mod replace_known_methods;
 mod substitute_alternate_syntax;
 
-use std::vec::Vec as StdVec;
-
 use oxc_ast_visit::{Visit, walk::walk_call_expression};
 use oxc_semantic::{ReferenceId, Scoping};
 use oxc_syntax::{
@@ -126,10 +124,9 @@ impl<'a> PeepholeOptimizations {
         }
     }
 
-    fn refresh_direct_eval_flags(scoping: &mut Scoping, direct_eval_scopes: &[ScopeId]) {
-        // Fast path: if no scope had `DirectEval` and we didn't see one live, there's
-        // nothing to clear or set. Semantic propagates `DirectEval` to the root, so the
-        // root flag is a sufficient witness that any scope has it.
+    fn refresh_direct_eval_flags(scoping: &mut Scoping, direct_eval_scopes: &FxHashSet<ScopeId>) {
+        // Semantic propagates `DirectEval` to the root, so an empty live set plus a clean
+        // root means no scope has the flag — nothing to clear or set.
         if direct_eval_scopes.is_empty() && !scoping.root_scope_flags().contains_direct_eval() {
             return;
         }
@@ -141,8 +138,13 @@ impl<'a> PeepholeOptimizations {
         for &scope_id in direct_eval_scopes {
             let mut ancestor = Some(scope_id);
             while let Some(scope_id) = ancestor {
+                let flags = scoping.scope_flags_mut(scope_id);
+                // An earlier iteration already flagged this scope; the rest of the chain too.
+                if flags.contains_direct_eval() {
+                    break;
+                }
+                flags.insert(ScopeFlags::DirectEval);
                 ancestor = scoping.scope_parent_id(scope_id);
-                scoping.scope_flags_mut(scope_id).insert(ScopeFlags::DirectEval);
             }
         }
     }
@@ -560,12 +562,12 @@ impl<'a> Traverse<'a> for PeepholeOptimizations {
 struct LiveUsageCollector<'s> {
     scoping: &'s Scoping,
     refs: FxHashSet<ReferenceId>,
-    direct_eval_scopes: StdVec<ScopeId>,
+    direct_eval_scopes: FxHashSet<ScopeId>,
 }
 
 impl<'s> LiveUsageCollector<'s> {
     fn new(scoping: &'s Scoping) -> Self {
-        Self { scoping, refs: FxHashSet::default(), direct_eval_scopes: StdVec::new() }
+        Self { scoping, refs: FxHashSet::default(), direct_eval_scopes: FxHashSet::default() }
     }
 }
 
@@ -576,7 +578,7 @@ impl<'a> Visit<'a> for LiveUsageCollector<'_> {
             && ident.name == "eval"
         {
             let scope_id = self.scoping.get_reference(ident.reference_id()).scope_id();
-            self.direct_eval_scopes.push(scope_id);
+            self.direct_eval_scopes.insert(scope_id);
         }
         // Recurse — `eval` may be nested in another call's arguments, e.g. `foo(eval('x'))`.
         walk_call_expression(self, it);
