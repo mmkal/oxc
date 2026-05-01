@@ -270,10 +270,7 @@ impl FormatConfig {
     /// Enabled when `svelte` is set to `true` or an object;
     /// disabled when unset or `false`.
     pub fn is_svelte_enabled(&self) -> bool {
-        matches!(
-            self.svelte,
-            Some(SvelteUserConfig::Bool(true) | SvelteUserConfig::Object(_))
-        )
+        matches!(self.svelte, Some(SvelteUserConfig::Bool(true) | SvelteUserConfig::Object(_)))
     }
 
     /// Resolve relative tailwind paths (`config`, `stylesheet`) to absolute paths.
