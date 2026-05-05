@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Deserializer, Serialize};
 
 /// A set of glob patterns.
-#[derive(Debug, Default, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, JsonSchema)]
 pub struct GlobSet(Vec<String>);
 
 impl<'de> Deserialize<'de> for GlobSet {
@@ -42,6 +42,10 @@ impl GlobSet {
 
     pub fn is_match(&self, path: &str) -> bool {
         self.0.iter().any(|glob| fast_glob::glob_match(glob, path))
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 
