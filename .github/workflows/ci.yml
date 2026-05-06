@@ -115,7 +115,6 @@ jobs:
         shell: bash
 
   test-big-endian:
-    if: ${{ github.ref_name == 'main' }}
     name: Test big-endian # s390x-unknown-linux-gnu is a big-endian
     runs-on: namespace-profile-linux-x64-default
     steps:

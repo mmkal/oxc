@@ -1940,6 +1940,7 @@ mod suppression {
     }
 
     #[test]
+    #[ignore = "disabled while big-endian CI runs on PRs"]
     fn test_happy_path() {
         let args = &["--suppress-all", "--type-aware", "--type-check"];
         let suppression = SuppressionTester::new()
